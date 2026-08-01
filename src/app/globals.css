@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Semantic design tokens. Every colour in the app resolves through one of
+   these — no component should ever reference a raw hex value.
+   --------------------------------------------------------------------------- */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 224 24% 8%;
+
+  --surface: 220 20% 98%;
+  --surface-raised: 0 0% 100%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 224 24% 8%;
+
+  --muted: 220 16% 95%;
+  --muted-foreground: 220 9% 38%;
+
+  --border: 220 14% 88%;
+  --border-strong: 220 14% 78%;
+
+  --accent: 174 90% 26%;
+  --accent-foreground: 0 0% 100%;
+  --accent-subtle: 174 70% 94%;
+
+  --ring: 174 90% 30%;
+
+  --grid-line: 220 14% 90%;
+  --shadow-color: 224 30% 12%;
+}
+
+.dark {
+  --background: 240 12% 4%;
+  --foreground: 220 20% 96%;
+
+  --surface: 240 10% 6%;
+  --surface-raised: 240 10% 9%;
+
+  --card: 240 10% 7%;
+  --card-foreground: 220 20% 96%;
+
+  --muted: 240 8% 14%;
+  --muted-foreground: 220 10% 68%;
+
+  --border: 240 8% 16%;
+  --border-strong: 240 8% 26%;
+
+  --accent: 172 82% 50%;
+  --accent-foreground: 240 20% 5%;
+  --accent-subtle: 172 60% 12%;
+
+  --ring: 172 82% 50%;
+
+  --grid-line: 240 8% 12%;
+  --shadow-color: 240 60% 2%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-surface: hsl(var(--surface));
+  --color-surface-raised: hsl(var(--surface-raised));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-border-strong: hsl(var(--border-strong));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-subtle: hsl(var(--accent-subtle));
+  --color-ring: hsl(var(--ring));
+  --color-grid-line: hsl(var(--grid-line));
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-card: 1rem;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Sticky nav height + breathing room, so anchored sections aren't clipped. */
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Nothing in this site is allowed to scroll the page sideways. */
+    overflow-x: hidden;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: hsl(var(--accent) / 0.25);
+    color: hsl(var(--foreground));
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  /* Fine grain overlay — sits above the gradient mesh, below content. */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .glass {
+    background-color: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(
+      110deg,
+      hsl(var(--foreground)) 20%,
+      hsl(var(--accent)) 55%,
+      hsl(var(--foreground)) 85%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .grid-pattern {
+    background-image:
+      linear-gradient(to right, hsl(var(--grid-line)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--grid-line)) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+}
+
+/* --- Motion ---------------------------------------------------------------- */
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, -3%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-3%, 3%, 0) scale(0.97);
+  }
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes pulse-node {
+  0%,
+  100% {
+    opacity: 0.45;
+    r: 4;
+  }
+  50% {
+    opacity: 1;
+    r: 5.5;
+  }
+}
+
+.animate-marquee {
+  animation: marquee 45s linear infinite;
+}
+
+.animate-mesh {
+  animation: mesh-drift 22s ease-in-out infinite;
+}
+
+.animate-dash {
+  stroke-dasharray: 6 10;
+  animation: dash-flow 1.6s linear infinite;
+}
+
+.animate-node {
+  animation: pulse-node 2.6s ease-in-out infinite;
+}
+
+.dialog-overlay[data-state="open"] {
+  animation: overlay-in 180ms ease-out;
+}
+
+.dialog-content[data-state="open"] {
+  animation: content-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A single, honest reduced-motion contract: nothing moves on its own. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
