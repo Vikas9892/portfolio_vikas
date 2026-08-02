@@ -9,7 +9,7 @@ export const siteConfig = {
   name: "Vikas Tiwari",
   title: "Vikas Tiwari — Software Engineer",
   role: "Software Engineer — Distributed Systems, Backend & Applied AI",
-  url: "https://portfolio-vikas.vercel.app",
+  url: "https://vikas-tiwari.vercel.app",
   ogImage: "/og-image.jpg",
   description:
     "B.Tech IT student at IIIT Bhopal building backend and distributed systems from first principles — raw TCP sockets, vector search, evaluation harnesses — then benchmarking them until the numbers are real.",
