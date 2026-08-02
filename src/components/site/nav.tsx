@@ -7,6 +7,7 @@ import { navSections, siteConfig } from "@/lib/site";
 import { useActiveSection } from "@/hooks/use-active-section";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
+import { CommandPalette } from "./command-palette";
 
 const sectionIds = navSections.map((s) => s.id);
 
@@ -101,6 +102,7 @@ export function Nav() {
           </ul>
 
           <div className="flex items-center gap-2">
+            <CommandPalette />
             <ThemeToggle />
             <a
               href={siteConfig.resume}

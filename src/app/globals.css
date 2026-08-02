@@ -163,6 +163,61 @@
       linear-gradient(to bottom, hsl(var(--grid-line)) 1px, transparent 1px);
     background-size: 56px 56px;
   }
+
+  /* Hero backdrop grid — 1px lines at 8%, faded out toward the edges. */
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--foreground) / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.08) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(
+      ellipse 75% 62% at 50% 42%,
+      black 25%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(ellipse 75% 62% at 50% 42%, black 25%, transparent 78%);
+  }
+}
+
+/* --- Hero photo treatment -------------------------------------------------- */
+
+/*
+ * The supplied photo has a busy multicoloured background. Layer 1 mutes the
+ * whole frame, layer 2 punches the face back through at full saturation, and
+ * the duotone + vignette pull the rest into the site's palette.
+ */
+.photo-muted {
+  filter: saturate(0.25) contrast(1.07) brightness(0.96);
+}
+
+/*
+ * Sized to the face itself (roughly x 36–66%, y 11–42% of the frame), not the
+ * upper third — anything wider lets the lanterns back in at full saturation.
+ */
+.photo-face-window {
+  -webkit-mask-image: radial-gradient(
+    ellipse 19% 20% at 51% 27%,
+    black 42%,
+    transparent 88%
+  );
+  mask-image: radial-gradient(ellipse 19% 20% at 51% 27%, black 42%, transparent 88%);
+}
+
+.photo-duotone {
+  background: radial-gradient(
+    ellipse 72% 56% at 50% 30%,
+    transparent 28%,
+    hsl(var(--accent) / 0.34) 100%
+  );
+  mix-blend-mode: color;
+}
+
+.photo-vignette {
+  background: radial-gradient(
+    ellipse 78% 64% at 50% 34%,
+    transparent 42%,
+    rgb(0 0 0 / 0.62) 100%
+  );
 }
 
 /* --- Motion ---------------------------------------------------------------- */
@@ -173,6 +228,32 @@
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(var(--orb-x, 8%), var(--orb-y, -10%), 0) scale(1.15);
+  }
+}
+
+/* Wipes the accent colour across a word, left to right. */
+@keyframes accent-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -244,12 +325,155 @@
   animation: pulse-node 2.6s ease-in-out infinite;
 }
 
+.animate-ring {
+  animation: ring-spin 8s linear infinite;
+}
+
+.animate-orb {
+  animation: orb-drift var(--orb-duration, 20s) ease-in-out infinite;
+}
+
+/*
+ * A duplicate of the word, painted in the accent and revealed left to right.
+ * The base word underneath stays in the foreground colour the whole time, so
+ * nothing is ever invisible mid-animation.
+ */
+.accent-wipe-word {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.accent-wipe-layer {
+  position: absolute;
+  inset: 0;
+  color: hsl(var(--accent));
+  clip-path: inset(0 100% 0 0);
+  animation: accent-wipe 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--wipe-delay, 400ms);
+}
+
 .dialog-overlay[data-state="open"] {
   animation: overlay-in 180ms ease-out;
 }
 
 .dialog-content[data-state="open"] {
   animation: content-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Print — recruiters do print portfolios. Force a legible black-on-white A4
+   document: drop the decoration, expand what the screen hides, and print link
+   targets so the URLs survive the paper.
+   --------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  :root,
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --surface: 0 0% 100%;
+    --surface-raised: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 22%;
+    --border: 0 0% 72%;
+    --border-strong: 0 0% 55%;
+    --accent: 0 0% 0%;
+    --accent-foreground: 0 0% 100%;
+    --accent-subtle: 0 0% 94%;
+    --grid-line: 0 0% 88%;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    mix-blend-mode: normal !important;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+    clip-path: none !important;
+    /* Reveal anything the scroll animations left mid-flight. */
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  /* Interactive chrome carries no meaning on paper. */
+  header,
+  footer,
+  .hero-grid,
+  .grain::before,
+  [data-print-hide],
+  [role="tablist"],
+  [aria-label="Previous screenshot"],
+  [aria-label="Next screenshot"] {
+    display: none !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+  }
+
+  section {
+    padding-block: 10mm !important;
+    break-inside: avoid;
+  }
+
+  h1 {
+    font-size: 22pt;
+  }
+
+  h2 {
+    font-size: 16pt;
+    break-after: avoid;
+  }
+
+  h3 {
+    font-size: 12pt;
+    break-after: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Print the destination of external links — a paper page has no hover. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    word-break: break-all;
+  }
+
+  .grid,
+  ul.grid {
+    display: block !important;
+  }
+
+  li {
+    break-inside: avoid;
+  }
 }
 
 /* A single, honest reduced-motion contract: nothing moves on its own. */

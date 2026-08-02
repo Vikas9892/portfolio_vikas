@@ -3,12 +3,36 @@
 import * as React from "react";
 import Image from "next/image";
 import { ArrowDown, FileText, MapPin } from "lucide-react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { marqueeItems } from "@/lib/data";
 import { siteConfig } from "@/lib/site";
 import { socialLinks } from "./social-icons";
+
+type HeadlineLine = {
+  text: string;
+  /** Word that gets the accent wiped into it after the line lands. */
+  wipe?: string;
+  tail?: string;
+};
+
+/** Headline split into its three rendered lines so they can stagger in. */
+const HEADLINE_LINES: HeadlineLine[] = [
+  { text: "I build systems" },
+  { text: "that don’t fall over —" },
+  { text: "and I ", wipe: "measure", tail: " them." },
+];
+
+const LINE_STAGGER = 0.06;
+const PHOTO_DELAY = 0.2;
 
 function GradientMesh() {
   return (
@@ -27,36 +51,163 @@ function GradientMesh() {
   );
 }
 
-function HeroPhoto() {
+/** 1px grid, masked to fade at the edges, drifting slowly on scroll. */
+function HeroGrid() {
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
-  // A gentle lift as the hero leaves the viewport — not parallax theatre.
-  const y = useTransform(scrollYProgress, [0, 0.25], [0, -28]);
+  const y = useTransform(scrollYProgress, [0, 0.3], [0, 60]);
 
   return (
     <motion.div
+      aria-hidden="true"
       style={reduceMotion ? undefined : { y }}
+      className="hero-grid pointer-events-none absolute -inset-y-24 inset-x-0"
+    />
+  );
+}
+
+const ORBS = [
+  { className: "-left-8 top-4 size-40 bg-accent/25", x: "10%", y: "-12%", d: "18s", delay: "0s" },
+  { className: "-right-10 top-1/3 size-32 bg-sky-400/20", x: "-12%", y: "10%", d: "24s", delay: "-6s" },
+  { className: "bottom-2 left-1/4 size-36 bg-accent/20", x: "8%", y: "8%", d: "21s", delay: "-12s" },
+  { className: "-right-4 bottom-10 size-24 bg-violet-400/20", x: "-9%", y: "-9%", d: "16s", delay: "-3s" },
+];
+
+function Orbs() {
+  return (
+    // No overflow clipping — a blurred orb cut off at a container edge reads as
+    // a hard-edged rectangle behind the photo.
+    <div aria-hidden="true" className="pointer-events-none absolute -inset-10">
+      {ORBS.map((orb, i) => (
+        <span
+          key={i}
+          className={`animate-orb absolute rounded-full blur-[56px] ${orb.className}`}
+          style={
+            {
+              "--orb-x": orb.x,
+              "--orb-y": orb.y,
+              "--orb-duration": orb.d,
+              animationDelay: orb.delay,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+function HeroPhoto() {
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const scrollY = useTransform(scrollYProgress, [0, 0.25], [0, -28]);
+
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  // Pointer-driven tilt. Touch devices never fire pointermove with a mouse
+  // type, so this stays inert on phones and tablets.
+  const [pointerFine, setPointerFine] = React.useState(false);
+  React.useEffect(() => {
+    setPointerFine(window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  }, []);
+
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+  const spring = { stiffness: 150, damping: 20, mass: 0.5 };
+  const sx = useSpring(px, spring);
+  const sy = useSpring(py, spring);
+
+  const rotateY = useTransform(sx, [-0.5, 0.5], [-4, 4]);
+  const rotateX = useTransform(sy, [-0.5, 0.5], [4, -4]);
+  const glowX = useTransform(sx, [-0.5, 0.5], ["25%", "75%"]);
+  const glowY = useTransform(sy, [-0.5, 0.5], ["25%", "75%"]);
+
+  const tiltActive = pointerFine && !reduceMotion;
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!tiltActive) return;
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    px.set((e.clientX - rect.left) / rect.width - 0.5);
+    py.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const reset = () => {
+    px.set(0);
+    py.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={wrapRef}
+      onMouseMove={handleMove}
+      onMouseLeave={reset}
+      style={reduceMotion ? undefined : { y: scrollY }}
       className="relative mx-auto w-full max-w-[19rem] lg:max-w-[22rem]"
     >
-      <div
-        aria-hidden="true"
-        className="absolute -inset-6 rounded-[2rem] bg-linear-to-tr from-accent/25 via-transparent to-sky-500/20 blur-2xl"
-      />
-      <div className="relative overflow-hidden rounded-[1.75rem] ring-1 ring-border-strong/60 shadow-2xl shadow-black/25">
-        <Image
-          src="/vikas.jpg"
-          alt="Vikas Tiwari"
-          width={880}
-          height={1100}
-          priority
-          sizes="(max-width: 1024px) 19rem, 22rem"
-          className="h-auto w-full object-cover"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-t from-background/45 via-transparent to-transparent"
-        />
-      </div>
+      <Orbs />
+
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, delay: PHOTO_DELAY, ease: [0.22, 1, 0.36, 1] }}
+        style={
+          tiltActive ? { rotateX, rotateY, transformPerspective: 1000 } : undefined
+        }
+        className="relative"
+      >
+        {/* Conic ring: a spinning gradient disc clipped to a 2px border. */}
+        <div className="relative overflow-hidden rounded-[1.75rem] p-[2px] shadow-2xl shadow-black/30">
+          <span
+            aria-hidden="true"
+            className="animate-ring absolute left-1/2 top-1/2 aspect-square w-[160%] -translate-x-1/2 -translate-y-1/2 opacity-40 [background:conic-gradient(from_0deg,transparent_0deg,hsl(var(--accent))_70deg,transparent_150deg,transparent_210deg,hsl(var(--accent))_290deg,transparent_360deg)]"
+          />
+
+          <div className="relative overflow-hidden rounded-[1.6rem] bg-background">
+            {/* Layer 1 — the whole frame desaturated into the palette. */}
+            <Image
+              src="/vikas.jpg"
+              alt="Vikas Tiwari"
+              width={880}
+              height={1100}
+              priority
+              sizes="(max-width: 1024px) 19rem, 22rem"
+              className="photo-muted h-auto w-full object-cover"
+            />
+
+            {/* Layer 2 — teal duotone pulling the busy background into palette. */}
+            <span aria-hidden="true" className="photo-duotone absolute inset-0" />
+
+            {/* Layer 3 — the face punched back through, above the duotone, so
+                skin keeps its natural colour while the surroundings stay muted. */}
+            <Image
+              src="/vikas.jpg"
+              alt=""
+              aria-hidden="true"
+              width={880}
+              height={1100}
+              priority
+              sizes="(max-width: 1024px) 19rem, 22rem"
+              className="photo-face-window absolute inset-0 h-full w-full object-cover"
+            />
+
+            <span aria-hidden="true" className="photo-vignette absolute inset-0" />
+
+            {/* Accent glow tracking the cursor. Framer keeps the two custom
+                properties in sync; the gradient itself is plain CSS. */}
+            {tiltActive && (
+              <motion.span
+                aria-hidden="true"
+                style={{ "--glow-x": glowX, "--glow-y": glowY } as React.CSSProperties}
+                className="pointer-events-none absolute inset-0 [background:radial-gradient(circle_at_var(--glow-x)_var(--glow-y),hsl(var(--accent)/0.3),transparent_62%)]"
+              />
+            )}
+
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-linear-to-t from-background/50 via-transparent to-transparent"
+            />
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -82,11 +233,55 @@ function Marquee() {
   );
 }
 
+function Headline() {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <h1 className="text-[2.1rem] font-semibold leading-[1.08] sm:text-5xl lg:text-[3.4rem]">
+      {HEADLINE_LINES.map((line, i) => (
+        <motion.span
+          key={line.text}
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.5,
+            delay: reduceMotion ? 0 : i * LINE_STAGGER,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="block"
+        >
+          {line.text}
+          {line.wipe && (
+            <>
+              <span className="accent-wipe-word">
+                {line.wipe}
+                <span
+                  aria-hidden="true"
+                  className="accent-wipe-layer"
+                  style={
+                    {
+                      "--wipe-delay": `${(HEADLINE_LINES.length - 1) * LINE_STAGGER * 1000 + 400}ms`,
+                    } as React.CSSProperties
+                  }
+                >
+                  {line.wipe}
+                </span>
+              </span>
+              {line.tail}
+            </>
+          )}
+        </motion.span>
+      ))}
+    </h1>
+  );
+}
+
 export function Hero() {
   return (
     <section id="top" className="relative isolate">
       <div className="grain relative overflow-hidden pb-14 pt-32 sm:pt-40">
         <GradientMesh />
+        <HeroGrid />
 
         <div className="relative mx-auto grid w-full max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
           {/* Photo stacks above the copy on mobile, sits right on desktop. */}
@@ -105,10 +300,7 @@ export function Hero() {
               </span>
             </div>
 
-            <h1 className="text-[2.1rem] font-semibold leading-[1.08] sm:text-5xl lg:text-[3.4rem]">
-              I build systems that don&rsquo;t fall over
-              <span className="text-gradient"> — and I measure them.</span>
-            </h1>
+            <Headline />
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               B.Tech IT @ IIIT Bhopal. I write backend and distributed systems from

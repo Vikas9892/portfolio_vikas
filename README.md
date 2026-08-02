@@ -20,7 +20,9 @@ src/
 ├─ app/
 │  ├─ layout.tsx        metadata, OpenGraph, JSON-LD Person schema, fonts, theme provider
 │  ├─ page.tsx          section composition; below-fold sections are dynamically imported
-│  ├─ globals.css       semantic design tokens, utilities, keyframes, reduced-motion contract
+│  ├─ globals.css       design tokens, photo treatment, keyframes, print + reduced-motion
+│  ├─ not-found.tsx     styled 404
+│  ├─ error.tsx         route-level error boundary
 │  ├─ sitemap.ts        generated from siteConfig.url
 │  ├─ robots.ts         generated from siteConfig.url
 │  ├─ icon.tsx          favicon — VT monogram
@@ -57,14 +59,45 @@ Colours are semantic CSS custom properties defined in `globals.css` — `--backg
 and a light set. Components reference `bg-card`, `text-muted-foreground`, `border-accent`
 and so on. No component contains a raw hex value.
 
+## Hero photo treatment
+
+The supplied photo has a busy multicoloured background that fought the palette. It is
+corrected in CSS at render time — the source file in `public/` is untouched:
+
+1. The whole frame is desaturated to 25% (`.photo-muted`).
+2. A teal duotone is blended over it in `mix-blend-mode: color`, weighted toward the edges.
+3. A second copy of the image, masked to an ellipse over the face, is layered **above**
+   the duotone so skin tone stays natural while the surroundings stay muted.
+4. A radial vignette darkens the outer frame so the face is the brightest point.
+
+Retuning it means editing those four rules in `globals.css`; no image editing required.
+
 ## Motion
 
 Every animation is gated on `prefers-reduced-motion`:
 
-- CSS animations are neutralised by a global `@media (prefers-reduced-motion: reduce)` rule.
+- CSS animations (marquee, gradient mesh, orbs, conic ring, accent wipe) are neutralised
+  by a global `@media (prefers-reduced-motion: reduce)` rule.
 - Framer Motion components read `useReducedMotion()` and collapse their transitions to
   zero duration rather than unmounting, so reduced-motion users still get the content —
   it just appears without movement.
+- The hero photo's pointer tilt and glow are gated on both reduced motion and
+  `(hover: hover) and (pointer: fine)`, so they never engage on touch devices.
+
+## Keyboard
+
+- `⌘K` / `Ctrl+K` opens the command palette from anywhere — jump to a section, open any
+  project repo, copy the email address, or download the résumé.
+- Arrow keys move between gallery slides, including inside the lightbox.
+- Both the lightbox and the project dialogs are state-controlled rather than opened by a
+  `DialogTrigger`, so they restore focus to their opener explicitly via `onCloseAutoFocus`.
+
+## Print
+
+`@media print` rebinds the design tokens to black-on-white, drops the nav, footer,
+gradients and carousel controls, forces any mid-flight scroll animation to full opacity,
+and appends `href` values after external links. The page prints legibly on A4 without
+colour.
 
 ## Verified
 
@@ -72,14 +105,21 @@ Measured against a production build (`next start`), Lighthouse desktop, median o
 
 | Category       | Score |
 | -------------- | ----- |
-| Performance    | 96    |
+| Performance    | 100   |
 | Accessibility  | 100   |
 | Best Practices | 100   |
 | SEO            | 100   |
 
+- LCP 0.7 s · CLS 0.002
 - axe-core: 0 WCAG 2.1 A/AA violations, in both dark and light themes
-- No horizontal overflow at 390, 820, 1440 or 2560 px
-- No console or runtime errors
+- No horizontal overflow at 390, 768, 1440 or 2560 px
+- No console errors, no runtime errors, no hydration warnings
+
+## Analytics
+
+`@vercel/analytics` is rendered only when `process.env.VERCEL` is set. The insights
+endpoint exists solely on Vercel's edge, so loading the script anywhere else would be a
+guaranteed 404 in the console — which is exactly what it was before the gate.
 
 ## Deploying
 

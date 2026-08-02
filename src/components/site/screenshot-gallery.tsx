@@ -15,10 +15,20 @@ type GalleryProps = {
   url?: string;
 };
 
+function Counter({ index, total }: { index: number; total: number }) {
+  return (
+    <span className="font-mono text-sm font-medium text-accent">
+      {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
+    </span>
+  );
+}
+
 export function ScreenshotGallery({ screenshots, url }: GalleryProps) {
   const [index, setIndex] = React.useState(0);
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
-  const thumbStripRef = React.useRef<HTMLDivElement>(null);
+  // The lightbox is state-controlled rather than opened by a DialogTrigger, so
+  // Radix has no trigger to hand focus back to. Restore it by hand on close.
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   const total = screenshots.length;
   const current = screenshots[index];
@@ -50,22 +60,44 @@ export function ScreenshotGallery({ screenshots, url }: GalleryProps) {
     }
   };
 
-  // Keep the active thumbnail in view as the selection moves.
-  React.useEffect(() => {
-    const strip = thumbStripRef.current;
-    const active = strip?.querySelector<HTMLElement>(`[data-index="${index}"]`);
-    if (!strip || !active) return;
-    strip.scrollTo({
-      left: active.offsetLeft - strip.clientWidth / 2 + active.clientWidth / 2,
-      behavior: "smooth",
-    });
-  }, [index]);
+  const Dots = (
+    <div
+      role="tablist"
+      aria-label="Screenshots"
+      className="flex flex-wrap items-center gap-2"
+    >
+      {screenshots.map((shot, i) => (
+        <button
+          key={shot.src}
+          type="button"
+          role="tab"
+          aria-selected={i === index}
+          aria-label={`${i + 1}. ${shot.caption}`}
+          onClick={() => go(i)}
+          className={cn(
+            "h-2 rounded-full transition-all duration-300",
+            i === index
+              ? "w-7 bg-accent"
+              : "w-2 bg-border-strong hover:bg-muted-foreground",
+          )}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div onKeyDown={onKeyDown}>
       <div className="group relative">
         <BrowserFrame url={url}>
-          <div className="relative aspect-[1905/880] w-full bg-surface">
+          {/* The whole frame is the affordance — clicking the shot opens it
+              full screen, which is what people try first. */}
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`Open screenshot full screen: ${current.caption}`}
+            className="relative block aspect-[1905/880] w-full cursor-zoom-in bg-surface"
+          >
             {screenshots.map((shot, i) =>
               visited.has(i) ? (
                 <Image
@@ -82,25 +114,21 @@ export function ScreenshotGallery({ screenshots, url }: GalleryProps) {
                 />
               ) : null,
             )}
-          </div>
-        </BrowserFrame>
 
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="absolute right-3 top-12 grid size-9 place-items-center rounded-full border border-border bg-background/85 text-muted-foreground opacity-0 backdrop-blur transition-all hover:border-accent hover:text-accent focus-visible:opacity-100 group-hover:opacity-100"
-          aria-label={`Expand screenshot: ${current.caption}`}
-        >
-          <Expand className="size-4" />
-        </button>
+            <span
+              aria-hidden="true"
+              className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border border-border bg-background/85 text-muted-foreground opacity-0 backdrop-blur transition-opacity group-hover:opacity-100"
+            >
+              <Expand className="size-4" />
+            </span>
+          </button>
+        </BrowserFrame>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <p className="min-w-0 text-sm text-muted-foreground" aria-live="polite">
-          <span className="font-mono text-xs text-accent">
-            {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
-          </span>{" "}
-          <span className="ml-1">{current.caption}</span>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+        <p className="flex min-w-0 items-baseline gap-2.5 text-[0.9375rem]" aria-live="polite">
+          <Counter index={index} total={total} />
+          <span className="text-muted-foreground">{current.caption}</span>
         </p>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -123,44 +151,17 @@ export function ScreenshotGallery({ screenshots, url }: GalleryProps) {
         </div>
       </div>
 
-      <div
-        ref={thumbStripRef}
-        role="tablist"
-        aria-label="Screenshots"
-        className="mt-5 flex gap-2.5 overflow-x-auto pb-2 [scrollbar-width:thin]"
-      >
-        {screenshots.map((shot, i) => (
-          <button
-            key={shot.src}
-            type="button"
-            role="tab"
-            data-index={i}
-            aria-selected={i === index}
-            aria-label={shot.caption}
-            onClick={() => go(i)}
-            className={cn(
-              "relative aspect-[1905/880] h-16 shrink-0 overflow-hidden rounded-md border-2 bg-surface transition-all",
-              i === index
-                ? "border-accent opacity-100"
-                : "border-transparent opacity-50 hover:opacity-90",
-            )}
-          >
-            <Image
-              src={shot.src}
-              alt=""
-              fill
-              sizes="120px"
-              loading="lazy"
-              className="object-cover object-top"
-            />
-          </button>
-        ))}
-      </div>
+      <div className="mt-4">{Dots}</div>
 
+      {/* Radix restores focus to the trigger on close and handles Escape. */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent
-          className="w-[min(84rem,calc(100vw-1.5rem))] border-0 bg-transparent shadow-none"
+          className="w-[min(92rem,calc(100vw-1.5rem))] border-0 bg-transparent shadow-none"
           onKeyDown={onKeyDown}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            triggerRef.current?.focus();
+          }}
         >
           <DialogTitle className="sr-only">{current.caption}</DialogTitle>
           <BrowserFrame url={url}>
@@ -169,17 +170,16 @@ export function ScreenshotGallery({ screenshots, url }: GalleryProps) {
                 src={current.src}
                 alt={current.alt}
                 fill
-                sizes="84rem"
+                sizes="92rem"
                 className="object-contain"
               />
             </div>
           </BrowserFrame>
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-mono text-xs text-accent">
-                {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
-              </span>{" "}
-              <span className="ml-1">{current.caption}</span>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
+            <p className="flex items-baseline gap-2.5 text-[0.9375rem]">
+              <Counter index={index} total={total} />
+              <span className="text-muted-foreground">{current.caption}</span>
             </p>
             <div className="flex shrink-0 items-center gap-2">
               <button

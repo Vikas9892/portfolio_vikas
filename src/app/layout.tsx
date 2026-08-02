@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
+import { Analytics } from "@vercel/analytics/next";
+
 import { siteConfig, socials } from "@/lib/site";
 import { ThemeProvider } from "@/components/site/theme-provider";
+import { ScrollProgress } from "@/components/site/scroll-progress";
 import "./globals.css";
 
 const inter = Inter({
@@ -125,8 +128,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <ScrollProgress />
           {children}
         </ThemeProvider>
+        {/* The insights endpoint only exists on Vercel's edge — loading the
+            script anywhere else is a guaranteed 404 in the console. */}
+        {process.env.VERCEL ? <Analytics /> : null}
         <script
           type="application/ld+json"
           // Static, author-controlled schema object — no user input reaches this.

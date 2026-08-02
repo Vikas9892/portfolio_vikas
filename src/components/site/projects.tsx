@@ -173,6 +173,15 @@ export function Projects() {
   const rest = projects.filter((p) => !p.featured);
   const openProject = projects.find((p) => p.slug === openSlug) ?? null;
 
+  // These dialogs are state-controlled, not opened by a DialogTrigger, so Radix
+  // has nothing to hand focus back to. Remember what opened it and restore.
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
+
+  const open = (slug: string) => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    setOpenSlug(slug);
+  };
+
   return (
     <Section
       id="projects"
@@ -181,7 +190,7 @@ export function Projects() {
       description="Each one started with a problem I could not solve by installing something. Open any card for the architecture, the decisions worth defending, and the numbers."
     >
       {featured && (
-        <FeaturedProject project={featured} onOpen={() => setOpenSlug(featured.slug)} />
+        <FeaturedProject project={featured} onOpen={() => open(featured.slug)} />
       )}
 
       <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -190,16 +199,21 @@ export function Projects() {
             key={project.slug}
             project={project}
             index={i}
-            onOpen={() => setOpenSlug(project.slug)}
+            onOpen={() => open(project.slug)}
           />
         ))}
       </ul>
 
       <Dialog
         open={openProject !== null}
-        onOpenChange={(open) => !open && setOpenSlug(null)}
+        onOpenChange={(next) => !next && setOpenSlug(null)}
       >
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            returnFocusRef.current?.focus();
+          }}
+        >
           {openProject && <ProjectDetail project={openProject} />}
         </DialogContent>
       </Dialog>

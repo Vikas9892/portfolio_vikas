@@ -50,7 +50,11 @@ export function ProjectDetail({ project }: { project: Project }) {
 
       <div className="space-y-10">
         <Block title="The problem">
-          <p className="max-w-3xl leading-relaxed text-muted-foreground">
+          {/* Lead sentence carries the whole point for anyone skimming. */}
+          <p className="max-w-3xl text-lg font-medium leading-relaxed text-foreground">
+            {project.problemShort}
+          </p>
+          <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
             {project.problem}
           </p>
         </Block>
@@ -62,7 +66,7 @@ export function ProjectDetail({ project }: { project: Project }) {
           <ArchitectureDiagram variant={project.diagram} />
         </Block>
 
-        <Block title="Engineering decisions">
+        <Block title="Decisions worth defending">
           <ul className="max-w-3xl space-y-4">
             {project.decisions.map((decision) => (
               <li key={decision} className="flex gap-3.5">

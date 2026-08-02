@@ -57,7 +57,9 @@ export type Project = {
   name: string;
   /** One-line positioning statement shown on the card. */
   tagline: string;
-  /** The problem the project set out to solve. */
+  /** The problem in a single sentence — the eight-second version. */
+  problemShort: string;
+  /** The problem the project set out to solve, in full. */
   problem: string;
   /** How the system is put together. */
   architecture: string;
@@ -79,6 +81,8 @@ export const projects: Project[] = [
     name: "Multi-Modal Product Intelligence Engine",
     tagline:
       "A retrieval platform that indexes products as both images and text, then explains every verdict it returns.",
+    problemShort:
+      "Keyword search misses the photo and image search misses the description, so neither can explain why two listings are the same product.",
     problem:
       "Catalog systems break down when the same product arrives as a photo, a title, and a messy description all at once. Keyword search misses the photo, image search misses the description, and neither can tell you why it thought two listings were the same item. I wanted a system that indexes both modalities, fuses them at query time, and shows its reasoning.",
     architecture:
@@ -185,6 +189,8 @@ export const projects: Project[] = [
     name: "Distributed Key-Value Store",
     tagline:
       "Written from raw TCP sockets upward — event loop, thread pool, write-ahead log and replication, all measured.",
+    problemShort:
+      "Installing Redis teaches you Redis — not what it costs to hold a thousand connections, keep a shared map consistent, and survive a SIGKILL.",
     problem:
       "Reaching for Redis teaches you Redis. I wanted to know what it actually costs to accept a thousand concurrent connections, keep a shared map consistent across threads, and survive a SIGKILL without losing a write — so I built the store from raw sockets instead of importing one.",
     architecture:
@@ -220,6 +226,8 @@ export const projects: Project[] = [
     name: "RAG Evaluation System",
     tagline:
       "A retrieval pipeline built without LangChain, and the evaluation harness that proves it works.",
+    problemShort:
+      "A RAG demo that answers one question well proves nothing — without a scoring harness, every change is a guess.",
     problem:
       "Most RAG demos are one good-looking answer away from being unfalsifiable. I built the pipeline from its parts — no framework abstraction in the way — and then built the harness that scores it, so improvements are measured rather than asserted.",
     architecture:
@@ -253,6 +261,8 @@ export const projects: Project[] = [
     name: "Nifty Portfolio Optimizer",
     tagline:
       "Mean-variance optimisation behind an async job queue, with a circuit breaker for the market-data API.",
+    problemShort:
+      "Optimisation is slow enough to time out a request, and the market-data API it depends on will eventually fail.",
     problem:
       "Portfolio optimisation is slow enough to time out a request and depends on an external market-data API that will eventually fail. Both problems had to be designed for rather than discovered in production.",
     architecture:
