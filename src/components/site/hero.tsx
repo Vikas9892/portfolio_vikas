@@ -174,8 +174,6 @@ function HeroPhoto() {
               className="photo-natural h-auto w-full object-cover"
             />
 
-            <span aria-hidden="true" className="photo-vignette absolute inset-0" />
-
             {/* Accent glow tracking the cursor. Framer keeps the two custom
                 properties in sync; the gradient itself is plain CSS. */}
             {tiltActive && (

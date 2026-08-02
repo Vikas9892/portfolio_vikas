@@ -81,8 +81,9 @@ of clear space above the head. The card's `overflow: hidden` does the clipping.
 overflow to slide against and `object-position` would be inert. Scaling about a point 20%
 down biases the crop toward the top, which is where the lanterns are.
 
-A radial vignette over the card darkens the outer frame so the face stays the brightest
-point.
+Nothing else is painted over the photo. There is no vignette, no duotone and no mask —
+the only overlays left in the card are a soft bottom fade that blends the lower edge into
+the page, and an accent glow that appears under the cursor on pointer-fine devices.
 
 ## Motion
 
