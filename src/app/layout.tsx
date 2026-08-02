@@ -131,9 +131,13 @@ export default function RootLayout({
           <ScrollProgress />
           {children}
         </ThemeProvider>
-        {/* The insights endpoint only exists on Vercel's edge — loading the
-            script anywhere else is a guaranteed 404 in the console. */}
-        {process.env.VERCEL ? <Analytics /> : null}
+        {/* Rendered unconditionally. Gating this on process.env.VERCEL looked
+            tidier — it silenced a 404 when running a production build locally —
+            but the flag did not evaluate truthy at build time on Vercel either,
+            so analytics silently never loaded in production. A stray console
+            404 on a developer's machine is worth far less than the feature
+            working where it actually matters. */}
+        <Analytics />
         <script
           type="application/ld+json"
           // Static, author-controlled schema object — no user input reaches this.

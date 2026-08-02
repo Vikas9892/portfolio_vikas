@@ -130,9 +130,13 @@ Measured against a production build (`next start`), Lighthouse desktop, median o
 
 ## Analytics
 
-`@vercel/analytics` is rendered only when `process.env.VERCEL` is set. The insights
-endpoint exists solely on Vercel's edge, so loading the script anywhere else would be a
-guaranteed 404 in the console — which is exactly what it was before the gate.
+`@vercel/analytics` is rendered unconditionally in `app/layout.tsx`.
+
+It was briefly gated on `process.env.VERCEL` to silence a console 404 when running a
+production build locally, where `/_vercel/insights/script.js` does not exist. That gate
+was a mistake: the flag did not evaluate truthy at build time on Vercel either, so
+analytics silently never loaded in production. Running `next start` locally will log one
+404 for the insights script — that is expected and affects nobody but you.
 
 ## Deploying
 
