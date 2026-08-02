@@ -179,44 +179,84 @@
   }
 }
 
-/* --- Hero photo treatment -------------------------------------------------- */
+/* --- Hero photo panel ------------------------------------------------------ */
 
 /*
- * The supplied photo has a busy multicoloured background. Layer 1 mutes the
- * whole frame, layer 2 punches the face back through at full saturation, and
- * the duotone + vignette pull the rest into the site's palette.
+ * The lanterns behind the subject are in sharp focus, so no colour treatment
+ * can push them back — they get cropped out instead. The image is scaled up
+ * inside an overflow-hidden panel, moving the densest part of the lantern field
+ * outside the frame and leaving a head-and-shoulders composition.
+ *
+ * Grading is deliberately minimal: the warmth of the face is the photo's best
+ * asset, so nothing here touches hue.
  */
-.photo-muted {
-  filter: saturate(0.25) contrast(1.07) brightness(0.96);
+/*
+ * transform-origin does the vertical cropping here, not object-position. At the
+ * desktop panel's aspect ratio the image covers with horizontal overflow only
+ * (measured: 72px across at 1440, 212px at 1024, 0px vertically), so the Y term
+ * of object-position has nothing to slide against. Origin at 32% lifts the top
+ * lantern row out of frame while leaving the head about 30px of clearance.
+ */
+.hero-photo-img {
+  filter: saturate(0.94) contrast(1.05) brightness(1.02);
+  object-position: center 24%;
+  transform: scale(1.3);
+  transform-origin: center 32%;
+}
+
+@media (min-width: 1024px) {
+  .hero-photo-img {
+    object-position: center 18%;
+    transform: scale(1.4);
+  }
 }
 
 /*
- * Sized to the face itself (roughly x 36–66%, y 11–42% of the frame), not the
- * upper third — anything wider lets the lanterns back in at full saturation.
+ * Seam blending. All three fades resolve to the page background so the panel
+ * dissolves into the page rather than sitting on it — and the top fade lets the
+ * nav overlay the image with no visible band.
  */
-.photo-face-window {
-  -webkit-mask-image: radial-gradient(
-    ellipse 19% 20% at 51% 27%,
-    black 42%,
-    transparent 88%
-  );
-  mask-image: radial-gradient(ellipse 19% 20% at 51% 27%, black 42%, transparent 88%);
+.hero-fade-top,
+.hero-fade-bottom,
+.hero-fade-left,
+.hero-focus {
+  position: absolute;
+  pointer-events: none;
 }
 
-.photo-duotone {
-  background: radial-gradient(
-    ellipse 72% 56% at 50% 30%,
-    transparent 28%,
-    hsl(var(--accent) / 0.34) 100%
-  );
-  mix-blend-mode: color;
+.hero-fade-top {
+  inset: 0 0 auto 0;
+  height: 80px;
+  background: linear-gradient(to bottom, hsl(var(--background)), transparent);
 }
 
-.photo-vignette {
+.hero-fade-bottom {
+  inset: auto 0 0 0;
+  height: 180px;
+  background: linear-gradient(to top, hsl(var(--background)), transparent);
+}
+
+/* Only desktop has a left seam — on mobile the panel is full width. */
+.hero-fade-left {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .hero-fade-left {
+    display: block;
+    inset: 0 auto 0 0;
+    width: 140px;
+    background: linear-gradient(to right, hsl(var(--background)), transparent);
+  }
+}
+
+/* One focus overlay — darkens the edges without touching colour. */
+.hero-focus {
+  inset: 0;
   background: radial-gradient(
-    ellipse 78% 64% at 50% 34%,
-    transparent 42%,
-    rgb(0 0 0 / 0.62) 100%
+    ellipse 70% 55% at 50% 30%,
+    transparent 0%,
+    rgb(0 0 0 / 0.42) 100%
   );
 }
 
@@ -231,22 +271,6 @@
   }
 }
 
-@keyframes ring-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes orb-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(var(--orb-x, 8%), var(--orb-y, -10%), 0) scale(1.15);
-  }
-}
-
 /* Wipes the accent colour across a word, left to right. */
 @keyframes accent-wipe {
   from {
@@ -254,19 +278,6 @@
   }
   to {
     clip-path: inset(0 0 0 0);
-  }
-}
-
-@keyframes mesh-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  33% {
-    transform: translate3d(4%, -3%, 0) scale(1.06);
-  }
-  66% {
-    transform: translate3d(-3%, 3%, 0) scale(0.97);
   }
 }
 
@@ -312,10 +323,6 @@
   animation: marquee 45s linear infinite;
 }
 
-.animate-mesh {
-  animation: mesh-drift 22s ease-in-out infinite;
-}
-
 .animate-dash {
   stroke-dasharray: 6 10;
   animation: dash-flow 1.6s linear infinite;
@@ -323,14 +330,6 @@
 
 .animate-node {
   animation: pulse-node 2.6s ease-in-out infinite;
-}
-
-.animate-ring {
-  animation: ring-spin 8s linear infinite;
-}
-
-.animate-orb {
-  animation: orb-drift var(--orb-duration, 20s) ease-in-out infinite;
 }
 
 /*

@@ -59,30 +59,49 @@ Colours are semantic CSS custom properties defined in `globals.css` — `--backg
 and a light set. Components reference `bg-card`, `text-muted-foreground`, `border-accent`
 and so on. No component contains a raw hex value.
 
-## Hero photo treatment
+## Hero photo panel
 
-The supplied photo has a busy multicoloured background that fought the palette. It is
-corrected in CSS at render time — the source file in `public/` is untouched:
+The hero is a two-column split — 55% text, 45% photo — with the photo bleeding to the
+top, right and bottom edges. It has no card, border, radius or shadow: the hard vertical
+edge where the text column meets the image is the composition.
 
-1. The whole frame is desaturated to 25% (`.photo-muted`).
-2. A teal duotone is blended over it in `mix-blend-mode: color`, weighted toward the edges.
-3. A second copy of the image, masked to an ellipse over the face, is layered **above**
-   the duotone so skin tone stays natural while the surroundings stay muted.
-4. A radial vignette darkens the outer frame so the face is the brightest point.
+The supplied photo has a busy lantern-lit background, and the lanterns are in sharp
+focus, so no colour treatment can push them back. They are **cropped out** instead. The
+source file in `public/` is untouched; everything happens in `.hero-photo-img`:
 
-Retuning it means editing those four rules in `globals.css`; no image editing required.
+```
+filter: saturate(0.94) contrast(1.05) brightness(1.02);  /* grading only, no hue shift */
+transform: scale(1.40);                                   /* 1.30 below 1024px */
+transform-origin: center 32%;
+```
+
+**`transform-origin` is what crops vertically here, not `object-position`.** At the
+desktop panel's aspect ratio the image covers with horizontal overflow only — measured at
+72px across and 0px vertically at 1440, 212px and 0px at 1024 — so the Y term of
+`object-position` has nothing to slide against. Only the mobile panel (48px of vertical
+overflow) responds to it. Origin at 32% lifts the top lantern row out of frame while
+leaving the head roughly 30px of clearance.
+
+The lanterns immediately flanking the head cannot be removed by cropping without cutting
+the head — they sit in the same vertical band. What remains reads as ambient background.
+
+Four overlays finish the panel: three edge gradients resolving to the page background
+(top 80px, bottom 180px, left 140px — desktop only) so the panel dissolves into the page,
+and one radial focus overlay at 0.42 that darkens the edges without touching colour.
 
 ## Motion
 
 Every animation is gated on `prefers-reduced-motion`:
 
-- CSS animations (marquee, gradient mesh, orbs, conic ring, accent wipe) are neutralised
-  by a global `@media (prefers-reduced-motion: reduce)` rule.
+- CSS animations (marquee, accent wipe, diagram flows) are neutralised by a global
+  `@media (prefers-reduced-motion: reduce)` rule.
 - Framer Motion components read `useReducedMotion()` and collapse their transitions to
   zero duration rather than unmounting, so reduced-motion users still get the content —
   it just appears without movement.
-- The hero photo's pointer tilt and glow are gated on both reduced motion and
-  `(hover: hover) and (pointer: fine)`, so they never engage on touch devices.
+
+The hero carries exactly two animations: the photo panel scales 1.06 → 1 over 1200ms on
+load, and the headline staggers in three lines 60ms apart with the accent wiping into
+"measure". There is no tilt, parallax, orbit or rotating ring — structure does not wobble.
 
 ## Keyboard
 
@@ -110,7 +129,7 @@ Measured against a production build (`next start`), Lighthouse desktop, median o
 | Best Practices | 100   |
 | SEO            | 100   |
 
-- LCP 0.7 s · CLS 0.002
+- LCP 0.7 s · CLS 0
 - axe-core: 0 WCAG 2.1 A/AA violations, in both dark and light themes
 - No horizontal overflow at 390, 768, 1440 or 2560 px
 - No console errors, no runtime errors, no hydration warnings
