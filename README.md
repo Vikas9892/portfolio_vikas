@@ -59,49 +59,42 @@ Colours are semantic CSS custom properties defined in `globals.css` — `--backg
 and a light set. Components reference `bg-card`, `text-muted-foreground`, `border-accent`
 and so on. No component contains a raw hex value.
 
-## Hero photo panel
+## Hero photo card
 
-The hero is a two-column split — 55% text, 45% photo — with the photo bleeding to the
-top, right and bottom edges. It has no card, border, radius or shadow: the hard vertical
-edge where the text column meets the image is the composition.
-
-The supplied photo has a busy lantern-lit background, and the lanterns are in sharp
-focus, so no colour treatment can push them back. They are **cropped out** instead. The
-source file in `public/` is untouched; everything happens in `.hero-photo-img`:
+The photo sits in a rounded card on the right of the hero, behind an animated conic
+gradient ring clipped to a 2px border. The source file in `public/` is untouched — the
+treatment is two CSS rules in `.photo-natural`:
 
 ```
-filter: saturate(0.94) contrast(1.05) brightness(1.02);  /* grading only, no hue shift */
-transform: scale(1.40);                                   /* 1.30 below 1024px */
-transform-origin: center 32%;
+filter: saturate(0.94) contrast(1.05);   /* grading only — no hue shift, no duotone */
+transform: scale(1.12);
+transform-origin: center 20%;
 ```
 
-**`transform-origin` is what crops vertically here, not `object-position`.** At the
-desktop panel's aspect ratio the image covers with horizontal overflow only — measured at
-72px across and 0px vertically at 1440, 212px and 0px at 1024 — so the Y term of
-`object-position` has nothing to slide against. Only the mobile panel (48px of vertical
-overflow) responds to it. Origin at 32% lifts the top lantern row out of frame while
-leaving the head roughly 30px of clearance.
+The photo's warmth is its strongest asset, so the grading is deliberately almost nothing.
+The busy lantern background is handled by framing instead: a modest zoom trims roughly 5%
+off each side and 2% off the top, clipping the outermost lanterns while leaving about 9%
+of clear space above the head. The card's `overflow: hidden` does the clipping.
 
-The lanterns immediately flanking the head cannot be removed by cropping without cutting
-the head — they sit in the same vertical band. What remains reads as ambient background.
+**`transform-origin` carries the 20% here, not `object-position`.** The `<img>` is sized
+`h-auto w-full`, so its box matches the source's 4:5 aspect exactly — `object-fit` has no
+overflow to slide against and `object-position` would be inert. Scaling about a point 20%
+down biases the crop toward the top, which is where the lanterns are.
 
-Four overlays finish the panel: three edge gradients resolving to the page background
-(top 80px, bottom 180px, left 140px — desktop only) so the panel dissolves into the page,
-and one radial focus overlay at 0.42 that darkens the edges without touching colour.
+A radial vignette over the card darkens the outer frame so the face stays the brightest
+point.
 
 ## Motion
 
 Every animation is gated on `prefers-reduced-motion`:
 
-- CSS animations (marquee, accent wipe, diagram flows) are neutralised by a global
-  `@media (prefers-reduced-motion: reduce)` rule.
+- CSS animations (marquee, gradient mesh, orbs, conic ring, accent wipe, diagram flows)
+  are neutralised by a global `@media (prefers-reduced-motion: reduce)` rule.
 - Framer Motion components read `useReducedMotion()` and collapse their transitions to
   zero duration rather than unmounting, so reduced-motion users still get the content —
   it just appears without movement.
-
-The hero carries exactly two animations: the photo panel scales 1.06 → 1 over 1200ms on
-load, and the headline staggers in three lines 60ms apart with the accent wiping into
-"measure". There is no tilt, parallax, orbit or rotating ring — structure does not wobble.
+- The hero photo's pointer tilt and cursor glow are gated on both reduced motion and
+  `(hover: hover) and (pointer: fine)`, so they never engage on touch devices.
 
 ## Keyboard
 
@@ -129,7 +122,7 @@ Measured against a production build (`next start`), Lighthouse desktop, median o
 | Best Practices | 100   |
 | SEO            | 100   |
 
-- LCP 0.7 s · CLS 0
+- LCP 0.7 s · CLS 0.002
 - axe-core: 0 WCAG 2.1 A/AA violations, in both dark and light themes
 - No horizontal overflow at 390, 768, 1440 or 2560 px
 - No console errors, no runtime errors, no hydration warnings

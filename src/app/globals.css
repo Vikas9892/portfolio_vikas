@@ -179,84 +179,31 @@
   }
 }
 
-/* --- Hero photo panel ------------------------------------------------------ */
+/* --- Hero photo treatment -------------------------------------------------- */
 
 /*
- * The lanterns behind the subject are in sharp focus, so no colour treatment
- * can push them back — they get cropped out instead. The image is scaled up
- * inside an overflow-hidden panel, moving the densest part of the lantern field
- * outside the frame and leaving a head-and-shoulders composition.
+ * Natural colour. The warmth of the face is the photo's strongest asset, so the
+ * grading here is deliberately almost nothing — no hue shift, no duotone, no
+ * desaturation.
  *
- * Grading is deliberately minimal: the warmth of the face is the photo's best
- * asset, so nothing here touches hue.
+ * The framing is tightened instead. `transform-origin` carries the 20% rather
+ * than `object-position`: the img is sized `h-auto w-full`, so its box matches
+ * the source's 4:5 aspect exactly and object-fit has no overflow to slide
+ * against — object-position would be inert. Scaling about a point 20% down
+ * trims ~5% off each side and ~2% off the top, which clips the outermost
+ * lanterns while leaving roughly 9% of clear space above the head.
  */
-/*
- * transform-origin does the vertical cropping here, not object-position. At the
- * desktop panel's aspect ratio the image covers with horizontal overflow only
- * (measured: 72px across at 1440, 212px at 1024, 0px vertically), so the Y term
- * of object-position has nothing to slide against. Origin at 32% lifts the top
- * lantern row out of frame while leaving the head about 30px of clearance.
- */
-.hero-photo-img {
-  filter: saturate(0.94) contrast(1.05) brightness(1.02);
-  object-position: center 24%;
-  transform: scale(1.3);
-  transform-origin: center 32%;
+.photo-natural {
+  filter: saturate(0.94) contrast(1.05);
+  transform: scale(1.12);
+  transform-origin: center 20%;
 }
 
-@media (min-width: 1024px) {
-  .hero-photo-img {
-    object-position: center 18%;
-    transform: scale(1.4);
-  }
-}
-
-/*
- * Seam blending. All three fades resolve to the page background so the panel
- * dissolves into the page rather than sitting on it — and the top fade lets the
- * nav overlay the image with no visible band.
- */
-.hero-fade-top,
-.hero-fade-bottom,
-.hero-fade-left,
-.hero-focus {
-  position: absolute;
-  pointer-events: none;
-}
-
-.hero-fade-top {
-  inset: 0 0 auto 0;
-  height: 80px;
-  background: linear-gradient(to bottom, hsl(var(--background)), transparent);
-}
-
-.hero-fade-bottom {
-  inset: auto 0 0 0;
-  height: 180px;
-  background: linear-gradient(to top, hsl(var(--background)), transparent);
-}
-
-/* Only desktop has a left seam — on mobile the panel is full width. */
-.hero-fade-left {
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  .hero-fade-left {
-    display: block;
-    inset: 0 auto 0 0;
-    width: 140px;
-    background: linear-gradient(to right, hsl(var(--background)), transparent);
-  }
-}
-
-/* One focus overlay — darkens the edges without touching colour. */
-.hero-focus {
-  inset: 0;
+.photo-vignette {
   background: radial-gradient(
-    ellipse 70% 55% at 50% 30%,
-    transparent 0%,
-    rgb(0 0 0 / 0.42) 100%
+    ellipse 78% 64% at 50% 34%,
+    transparent 42%,
+    rgb(0 0 0 / 0.62) 100%
   );
 }
 
@@ -271,6 +218,22 @@
   }
 }
 
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(var(--orb-x, 8%), var(--orb-y, -10%), 0) scale(1.15);
+  }
+}
+
 /* Wipes the accent colour across a word, left to right. */
 @keyframes accent-wipe {
   from {
@@ -278,6 +241,19 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, -3%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-3%, 3%, 0) scale(0.97);
   }
 }
 
@@ -323,6 +299,10 @@
   animation: marquee 45s linear infinite;
 }
 
+.animate-mesh {
+  animation: mesh-drift 22s ease-in-out infinite;
+}
+
 .animate-dash {
   stroke-dasharray: 6 10;
   animation: dash-flow 1.6s linear infinite;
@@ -330,6 +310,14 @@
 
 .animate-node {
   animation: pulse-node 2.6s ease-in-out infinite;
+}
+
+.animate-ring {
+  animation: ring-spin 8s linear infinite;
+}
+
+.animate-orb {
+  animation: orb-drift var(--orb-duration, 20s) ease-in-out infinite;
 }
 
 /*
